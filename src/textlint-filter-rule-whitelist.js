@@ -11,31 +11,44 @@ const defaultOptions = {
     // "string"
     // "/\\d+/"
     // "/^===/m"
-    allow: []
+    allow: {
+        /*
+        "rule_id": []
+        */
+    }
 };
 module.exports = function(context, options) {
     const { Syntax, shouldIgnore, getSource } = context;
-    const allowWords = options.allow || defaultOptions.allow;
-    const regExpWhiteList = allowWords.map(allowWord => {
-        if (!allowWord) {
-            return /^$/;
-        }
-        if (allowWord[0] === "/" && COMPLEX_REGEX_END.test(allowWord)) {
-            return toRegExp(allowWord);
-        }
-        const escapeString = escapeStringRegexp(allowWord);
-        return new RegExp(escapeString, "g");
-    });
+    const allowRules = options.allow || defaultOptions.allow;
+
+    const rules = {};
+    for (let allowRule in allowRules) {
+        rules[allowRule] = allowRules[allowRule].map(allowWord => {
+            if (!allowWord) {
+                return /^$/;
+            }
+            if (allowWord[0] === "/" && COMPLEX_REGEX_END.test(allowWord)) {
+                return toRegExp(allowWord);
+            }
+            const escapeString = escapeStringRegexp(allowWord);
+            return new RegExp(escapeString, "g");
+        });
+    }
     return {
-        [Syntax.Document](node) {
+        [Syntax.Str](node) {
             const text = getSource(node);
-            regExpWhiteList.forEach(whiteRegExp => {
-                const matches = execall(whiteRegExp, text);
-                matches.forEach(match => {
-                    const lastIndex = match.index + match.match.length;
-                    shouldIgnore([match.index, lastIndex]);
+            for (let ruleId in rules) {
+                const regExpWhiteList = rules[ruleId];
+                regExpWhiteList.forEach(whiteRegExp => {
+                    const matches = execall(whiteRegExp, text);
+                    matches.forEach(match => {
+                        const nodeStartIndex = node.range[0];
+                        shouldIgnore([nodeStartIndex + match.index, nodeStartIndex + match.index + match.match.length], {
+                            ruleId: ruleId
+                        });
+                    });
                 });
-            });
+            }
         }
     };
 };
