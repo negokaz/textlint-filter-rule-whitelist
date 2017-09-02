@@ -3,6 +3,8 @@
 const execall = require('execall');
 const escapeStringRegexp = require('escape-string-regexp');
 const toRegExp = require("str-to-regexp").toRegExp;
+const yaml = require('js-yaml');
+const fs   = require('fs');
 const COMPLEX_REGEX_END = /^.+\/(\w*)$/;
 const defaultOptions = {
     // white list
@@ -11,16 +13,12 @@ const defaultOptions = {
     // "string"
     // "/\\d+/"
     // "/^===/m"
-    allow: {
-        /*
-        "rule_id": []
-        */
-    }
+    path: "./whitelist.yml" /* ex: "./conf/whitelist.yml" */
 };
 module.exports = function(context, options) {
     const { Syntax, shouldIgnore, getSource } = context;
-    const allowRules = options.allow || defaultOptions.allow;
-
+    const rulePath = options.path || defaultOptions.path;
+    const allowRules = yaml.safeLoad(fs.readFileSync(rulePath, 'utf8'));
     const rules = {};
     for (let allowRule in allowRules) {
         rules[allowRule] = allowRules[allowRule].map(allowWord => {
