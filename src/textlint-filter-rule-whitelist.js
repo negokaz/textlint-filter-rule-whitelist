@@ -17,8 +17,9 @@ const defaultOptions = {
 };
 module.exports = function(context, options) {
     const { Syntax, shouldIgnore, getSource } = context;
-    const rulePath = options.path || defaultOptions.path;
-    const allowRules = yaml.safeLoad(fs.readFileSync(rulePath, 'utf8'));
+    const configPath = options.path || defaultOptions.path;
+    const config = yaml.safeLoad(fs.readFileSync(configPath, 'utf8'));
+    const allowRules = config.allow;
     const rules = {};
     for (let allowRule in allowRules) {
         rules[allowRule] = allowRules[allowRule].map(allowWord => {
